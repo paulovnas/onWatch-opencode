@@ -92,6 +92,7 @@ type Handler struct {
 	geminiTracker      *tracker.GeminiTracker
 	openrouterTracker  *tracker.OpenRouterTracker
 	cursorTracker      *tracker.CursorTracker
+	opencodeTracker    *tracker.OpenCodeTracker
 	updater            *update.Updater
 	notifier           Notifier
 	agentManager       ProviderAgentController
@@ -817,6 +818,11 @@ func (h *Handler) SetCursorTracker(t *tracker.CursorTracker) {
 	h.cursorTracker = t
 }
 
+// SetOpenCodeTracker sets the OpenCode tracker for usage summary enrichment.
+func (h *Handler) SetOpenCodeTracker(t *tracker.OpenCodeTracker) {
+	h.opencodeTracker = t
+}
+
 // SetAgentManager sets provider agent lifecycle controller.
 func (h *Handler) SetAgentManager(m ProviderAgentController) {
 	h.agentManager = m
@@ -1152,6 +1158,7 @@ func providerCatalog() []providerCatalogItem {
 		{Key: "openrouter", Name: "OpenRouter", Description: "OpenRouter credits usage tracking"},
 		{Key: "gemini", Name: "Gemini", Description: "Google Gemini CLI quota tracking", AutoDetectable: true},
 		{Key: "cursor", Name: "Cursor", Description: "Cursor usage and quota tracking", AutoDetectable: true},
+		{Key: "opencode", Name: "OpenCode GO", Description: "OpenCode GO usage tracking", AutoDetectable: true},
 	}
 }
 
@@ -1211,6 +1218,8 @@ func (h *Handler) isProviderConfigured(provider string) bool {
 		return h.config.GeminiEnabled
 	case "cursor":
 		return strings.TrimSpace(h.config.CursorToken) != "" || strings.TrimSpace(api.DetectCursorToken(h.logger)) != ""
+	case "opencode":
+		return strings.TrimSpace(h.config.OpenCodeCookie) != "" || strings.TrimSpace(api.DetectOpenCodeCookie(h.logger)) != ""
 	default:
 		return false
 	}
@@ -1340,6 +1349,8 @@ func applyProviderConfig(dst, src *config.Config) {
 	dst.OpenRouterAPIKey = src.OpenRouterAPIKey
 	dst.GeminiEnabled = src.GeminiEnabled
 	dst.GeminiAutoToken = src.GeminiAutoToken
+	dst.OpenCodeCookie = src.OpenCodeCookie
+	dst.OpenCodeAutoCookie = src.OpenCodeAutoCookie
 	dst.ZaiRegion = src.ZaiRegion
 	dst.MiniMaxRegion = src.MiniMaxRegion
 }
@@ -1350,6 +1361,7 @@ func applyProviderConfig(dst, src *config.Config) {
 // without exposing the actual values.
 var providerSecretKeys = map[string]bool{
 	"api_key":    true,
+	"cookie":     true,
 	"token":      true,
 	"csrf_token": true,
 }
@@ -1467,6 +1479,12 @@ func ApplyProviderSettingsFromDB(st *store.Store, cfg *config.Config, logger *sl
 	if s := provSettings["openrouter"]; s != nil {
 		if key, _ := s["api_key"].(string); key != "" {
 			cfg.OpenRouterAPIKey = key
+		}
+	}
+	if s := provSettings["opencode"]; s != nil {
+		if cookie, _ := s["cookie"].(string); cookie != "" {
+			cfg.OpenCodeCookie = api.NormalizeOpenCodeCookie(cookie)
+			cfg.OpenCodeAutoCookie = false
 		}
 	}
 	if s := provSettings["antigravity"]; s != nil {
@@ -1809,6 +1827,8 @@ func (h *Handler) Current(w http.ResponseWriter, r *http.Request) {
 		h.currentGemini(w, r)
 	case "cursor":
 		h.currentCursor(w, r)
+	case "opencode":
+		h.currentOpenCode(w, r)
 	default:
 		respondError(w, http.StatusBadRequest, fmt.Sprintf("unknown provider: %s", provider))
 	}
@@ -1886,6 +1906,9 @@ func (h *Handler) currentBoth(w http.ResponseWriter, r *http.Request) {
 	}
 	if h.config.HasProvider("cursor") && providerTelemetryEnabled(visibility, "cursor") {
 		response["cursor"] = h.buildCursorCurrent()
+	}
+	if h.config.HasProvider("opencode") && providerTelemetryEnabled(visibility, "opencode") {
+		response["opencode"] = h.buildOpenCodeCurrent()
 	}
 	respondJSON(w, http.StatusOK, response)
 }
@@ -2227,6 +2250,8 @@ func (h *Handler) History(w http.ResponseWriter, r *http.Request) {
 		h.historyGemini(w, r)
 	case "cursor":
 		h.historyCursor(w, r)
+	case "opencode":
+		h.historyOpenCode(w, r)
 	default:
 		respondError(w, http.StatusBadRequest, fmt.Sprintf("unknown provider: %s", provider))
 	}
@@ -2541,6 +2566,30 @@ func (h *Handler) historyBoth(w http.ResponseWriter, r *http.Request) {
 				cursorData = append(cursorData, entry)
 			}
 			response["cursor"] = cursorData
+		}
+	}
+
+	if h.config.HasProvider("opencode") && providerTelemetryEnabled(visibility, "opencode") && h.store != nil {
+		snapshots, err := h.store.QueryOpenCodeRange(start, now)
+		if err == nil {
+			step := downsampleStep(len(snapshots), maxChartPoints)
+			last := len(snapshots) - 1
+			opencodeData := make([]map[string]interface{}, 0, min(len(snapshots), maxChartPoints))
+			for i, snap := range snapshots {
+				if step > 1 && i != 0 && i != last && i%step != 0 {
+					continue
+				}
+				entry := map[string]interface{}{
+					"capturedAt":    snap.CapturedAt.Format(time.RFC3339),
+					"rolling_usage": snap.RollingUsage.Utilization * 100,
+					"weekly_usage":  snap.WeeklyUsage.Utilization * 100,
+				}
+				if snap.HasMonthlyUsage {
+					entry["monthly_usage"] = snap.MonthlyUsage.Utilization * 100
+				}
+				opencodeData = append(opencodeData, entry)
+			}
+			response["opencode"] = opencodeData
 		}
 	}
 
@@ -3108,6 +3157,185 @@ func (h *Handler) loggingHistoryOpenRouter(w http.ResponseWriter, r *http.Reques
 		"provider":   "openrouter",
 		"quotaNames": quotaNames,
 		"logs":       logs,
+	})
+}
+
+// loggingHistoryOpenCode returns OpenCode polling history.
+func (h *Handler) loggingHistoryOpenCode(w http.ResponseWriter, r *http.Request) {
+	if h.store == nil {
+		respondJSON(w, http.StatusOK, map[string]interface{}{
+			"provider":   "opencode",
+			"quotaNames": []string{},
+			"logs":       []interface{}{},
+		})
+		return
+	}
+
+	start, end, limit := h.loggingHistoryRangeAndLimit(r)
+	snapshots, err := h.store.QueryOpenCodeRange(start, end, limit)
+	if err != nil {
+		h.logger.Error("failed to query OpenCode logging history", "error", err)
+		respondError(w, http.StatusInternalServerError, "failed to query logging history")
+		return
+	}
+
+	// Build quotaNames from ALL snapshots
+	quotaNameSet := map[string]bool{
+		"rolling_usage": true,
+		"weekly_usage":  true,
+	}
+	for _, snap := range snapshots {
+		if snap.HasMonthlyUsage {
+			quotaNameSet["monthly_usage"] = true
+		}
+	}
+
+	var quotaNames []string
+	for name := range quotaNameSet {
+		quotaNames = append(quotaNames, name)
+	}
+
+	var logs []map[string]interface{}
+	for _, snap := range snapshots {
+		log := map[string]interface{}{
+			"capturedAt":  snap.CapturedAt.Format(time.RFC3339),
+			"workspaceId": snap.WorkspaceID,
+			"quotaValues": map[string]interface{}{},
+		}
+
+		rollingValues := map[string]interface{}{
+			"quotaName":    "rolling_usage",
+			"utilization":  normalizeOpenCodeUtilization(snap.RollingUsage.Utilization),
+			"usagePercent": openCodeUsagePercent(snap.RollingUsage.Utilization),
+		}
+		if snap.RollingUsage.ResetsAt != nil {
+			rollingValues["resetTime"] = snap.RollingUsage.ResetsAt.Format(time.RFC3339)
+		}
+		if snap.RollingUsage.ResetInSec > 0 {
+			rollingValues["resetInSec"] = snap.RollingUsage.ResetInSec
+		}
+		log["quotaValues"].(map[string]interface{})["rolling_usage"] = rollingValues
+
+		weeklyValues := map[string]interface{}{
+			"quotaName":    "weekly_usage",
+			"utilization":  normalizeOpenCodeUtilization(snap.WeeklyUsage.Utilization),
+			"usagePercent": openCodeUsagePercent(snap.WeeklyUsage.Utilization),
+		}
+		if snap.WeeklyUsage.ResetsAt != nil {
+			weeklyValues["resetTime"] = snap.WeeklyUsage.ResetsAt.Format(time.RFC3339)
+		}
+		if snap.WeeklyUsage.ResetInSec > 0 {
+			weeklyValues["resetInSec"] = snap.WeeklyUsage.ResetInSec
+		}
+		log["quotaValues"].(map[string]interface{})["weekly_usage"] = weeklyValues
+
+		if snap.HasMonthlyUsage {
+			monthlyValues := map[string]interface{}{
+				"quotaName":    "monthly_usage",
+				"utilization":  normalizeOpenCodeUtilization(snap.MonthlyUsage.Utilization),
+				"usagePercent": openCodeUsagePercent(snap.MonthlyUsage.Utilization),
+			}
+			if snap.MonthlyUsage.ResetsAt != nil {
+				monthlyValues["resetTime"] = snap.MonthlyUsage.ResetsAt.Format(time.RFC3339)
+			}
+			if snap.MonthlyUsage.ResetInSec > 0 {
+				monthlyValues["resetInSec"] = snap.MonthlyUsage.ResetInSec
+			}
+			log["quotaValues"].(map[string]interface{})["monthly_usage"] = monthlyValues
+		}
+
+		logs = append(logs, log)
+	}
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"provider":   "opencode",
+		"quotaNames": quotaNames,
+		"logs":       logs,
+	})
+}
+
+// TestProvider tests a provider's configuration and returns diagnostic information
+func (h *Handler) TestProvider(w http.ResponseWriter, r *http.Request) {
+	provider := r.URL.Query().Get("provider")
+	if provider == "" {
+		respondError(w, http.StatusBadRequest, "provider parameter is required")
+		return
+	}
+
+	h.logger.Info("testProvider called", "provider", provider)
+
+	switch provider {
+	case "opencode":
+		h.testOpenCode(w, r)
+	default:
+		respondError(w, http.StatusBadRequest, fmt.Sprintf("unknown provider: %s", provider))
+	}
+}
+
+// testOpenCode tests OpenCode configuration and returns diagnostic information
+func (h *Handler) testOpenCode(w http.ResponseWriter, r *http.Request) {
+	h.logger.Info("Testing OpenCode configuration")
+
+	// Check if OpenCode is configured
+	cookie := h.config.OpenCodeCookie
+	autoCookie := h.config.OpenCodeAutoCookie
+
+	h.logger.Info("OpenCode configuration check",
+		"cookie_set", cookie != "",
+		"auto_detected", autoCookie,
+		"cookie_length", len(cookie),
+	)
+
+	if cookie == "" {
+		// Try to detect cookie
+		detected := api.DetectOpenCodeCookie(h.logger)
+		h.logger.Info("Auto-detection attempt", "detected", detected != "")
+		if detected != "" {
+			respondJSON(w, http.StatusOK, map[string]interface{}{
+				"message":       "OpenCode GO cookie auto-detected from OPENCODE_COOKIE environment variable",
+				"cookie_length": len(detected),
+				"auto_detected": true,
+			})
+			return
+		}
+		respondError(w, http.StatusBadRequest, "OpenCode GO cookie not configured. In Settings > OpenCode GO, copy auth from DevTools > Application > Cookies > https://opencode.ai and paste it into auth Cookie Value.")
+		return
+	}
+
+	// Try to create a client and fetch quotas
+	client := api.NewOpenCodeClient(cookie, h.logger)
+
+	h.logger.Info("OpenCode client created successfully")
+
+	// Test quota fetch
+	ctx := context.Background()
+	snapshot, err := client.FetchQuotas(ctx, "")
+	if err != nil {
+		h.logger.Error("Failed to fetch quotas", "error", err)
+		respondError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to fetch quotas: %v", err))
+		return
+	}
+
+	h.logger.Info("Quotas fetched successfully",
+		"workspace_id", snapshot.WorkspaceID,
+		"rolling_utilization", snapshot.RollingUsage.Utilization,
+		"weekly_utilization", snapshot.WeeklyUsage.Utilization,
+		"has_monthly", snapshot.HasMonthlyUsage,
+	)
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"message":       "OpenCode GO configuration is valid",
+		"workspace_id":  snapshot.WorkspaceID,
+		"rolling_usage": snapshot.RollingUsage.Utilization,
+		"weekly_usage":  snapshot.WeeklyUsage.Utilization,
+		"monthly_usage": func() float64 {
+			if snapshot.HasMonthlyUsage {
+				return snapshot.MonthlyUsage.Utilization
+			}
+			return 0
+		}(),
+		"has_monthly":   snapshot.HasMonthlyUsage,
+		"auto_detected": autoCookie,
 	})
 }
 
@@ -6226,7 +6454,15 @@ func (h *Handler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 			respondError(w, http.StatusInternalServerError, "failed to save provider settings")
 			return
 		}
-		h.logger.Info("Provider settings updated", "providers", provSettings)
+		updatedProviders := make([]string, 0, len(provSettings))
+		for provider := range provSettings {
+			updatedProviders = append(updatedProviders, provider)
+		}
+		sort.Strings(updatedProviders)
+		h.logger.Info("Provider settings updated", "providers", updatedProviders)
+		if h.config != nil {
+			ApplyProviderSettingsFromDB(h.store, h.config, h.logger)
+		}
 		// Strip sensitive fields before returning to client
 		stripProviderSecrets(existing)
 		result["provider_settings"] = existing
@@ -10047,6 +10283,8 @@ func (h *Handler) LoggingHistory(w http.ResponseWriter, r *http.Request) {
 		h.loggingHistoryGemini(w, r)
 	case "cursor":
 		h.loggingHistoryCursor(w, r)
+	case "opencode":
+		h.loggingHistoryOpenCode(w, r)
 	default:
 		respondError(w, http.StatusBadRequest, fmt.Sprintf("unknown provider: %s", provider))
 	}

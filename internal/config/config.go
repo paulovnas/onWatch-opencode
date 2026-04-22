@@ -65,6 +65,10 @@ type Config struct {
 	CursorToken     string // CURSOR_TOKEN or auto-detected
 	CursorAutoToken bool   // true if token was auto-detected
 
+	// OpenCode provider configuration (cookie-based authentication)
+	OpenCodeCookie     string // OPENCODE_COOKIE or auto-detected
+	OpenCodeAutoCookie bool   // true if cookie was auto-detected
+
 	// Custom API Integrations telemetry ingestion
 	APIIntegrationsEnabled   bool          // ONWATCH_API_INTEGRATIONS_ENABLED (default: true)
 	APIIntegrationsDir       string        // ONWATCH_API_INTEGRATIONS_DIR (default: ~/.onwatch/api-integrations or /data/api-integrations)
@@ -310,6 +314,7 @@ func loadFromEnvAndFlags(flags *flagValues) (*Config, error) {
 
 	// Cursor provider (auto-detected from Cursor Desktop SQLite or keychain)
 	cfg.CursorToken = strings.TrimSpace(os.Getenv("CURSOR_TOKEN"))
+	cfg.OpenCodeCookie = strings.TrimSpace(os.Getenv("OPENCODE_COOKIE"))
 
 	// Custom API Integrations telemetry ingestion
 	cfg.APIIntegrationsDir = strings.TrimSpace(os.Getenv("ONWATCH_API_INTEGRATIONS_DIR"))
@@ -519,6 +524,9 @@ func (c *Config) AvailableProviders() []string {
 	if c.CursorToken != "" {
 		providers = append(providers, "cursor")
 	}
+	if c.OpenCodeCookie != "" {
+		providers = append(providers, "opencode")
+	}
 	return providers
 }
 
@@ -545,6 +553,8 @@ func (c *Config) HasProvider(name string) bool {
 		return c.GeminiEnabled
 	case "cursor":
 		return c.CursorToken != ""
+	case "opencode":
+		return c.OpenCodeCookie != ""
 	}
 	return false
 }
@@ -580,6 +590,9 @@ func (c *Config) HasMultipleProviders() bool {
 		count++
 	}
 	if c.CursorToken != "" {
+		count++
+	}
+	if c.OpenCodeCookie != "" {
 		count++
 	}
 	return count > 1
@@ -630,6 +643,12 @@ func (c *Config) String() string {
 	fmt.Fprintf(&sb, "  CursorToken: %s,\n", cursorDisplay)
 	if c.CursorAutoToken {
 		fmt.Fprintf(&sb, "  CursorAutoToken: true,\n")
+	}
+
+	opencodeDisplay := redactAPIKey(c.OpenCodeCookie, "")
+	fmt.Fprintf(&sb, "  OpenCodeCookie: %s,\n", opencodeDisplay)
+	if c.OpenCodeAutoCookie {
+		fmt.Fprintf(&sb, "  OpenCodeAutoCookie: true,\n")
 	}
 
 	fmt.Fprintf(&sb, "  PollInterval: %v,\n", c.PollInterval)

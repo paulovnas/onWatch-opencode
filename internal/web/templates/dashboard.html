@@ -2,38 +2,56 @@
 <div class="app" data-poll-interval="{{.PollIntervalSec}}">
     <header class="app-header">
         <a href="#" class="header-brand" id="scroll-top" aria-label="Scroll to top">
-            <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M19.07 4.93L4.93 19.07"/>
+            <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2v20M2 12h20M4.93 4.93l14.14 14.14M19.07 4.93L4.93 19.07" />
             </svg>
             <span class="brand-text">onWatch</span>
         </a>
         {{if gt (len .Providers) 1}}
         <div class="provider-tabs" id="provider-tabs" role="tablist" aria-label="Select provider">
             {{range .Providers}}
-            <button class="provider-tab {{if eq . $.CurrentProvider}}active{{end}}"
-                    data-provider="{{.}}" role="tab" aria-selected="{{if eq . $.CurrentProvider}}true{{else}}false{{end}}">
-                {{if eq . "synthetic"}}Synthetic{{else if eq . "zai"}}Z.ai{{else if eq . "anthropic"}}Anthropic{{else if eq . "copilot"}}Copilot{{else if eq . "codex"}}Codex{{else if eq . "antigravity"}}Antigravity{{else if eq . "minimax"}}MiniMax{{else if eq . "gemini"}}Gemini{{else if eq . "cursor"}}Cursor{{else if eq . "api-integrations"}}API Integrations{{else if eq . "both"}}All{{else}}{{.}}{{end}}
+            <button class="provider-tab {{if eq . $.CurrentProvider}}active{{end}}" data-provider="{{.}}" role="tab"
+                aria-selected="{{if eq . $.CurrentProvider}}true{{else}}false{{end}}">
+                {{if eq . "synthetic"}}Synthetic{{else if eq . "zai"}}Z.ai{{else if eq . "anthropic"}}Anthropic{{else if
+                eq . "copilot"}}Copilot{{else if eq . "codex"}}Codex{{else if eq . "antigravity"}}Antigravity{{else if
+                eq . "minimax"}}MiniMax{{else if eq . "gemini"}}Gemini{{else if eq . "cursor"}}Cursor{{else if eq .
+                "opencode"}}OpenCode GO{{else if eq . "api-integrations"}}API Integrations{{else if eq .
+                "both"}}All{{else}}{{.}}{{end}}
             </button>
             {{end}}
         </div>
         {{end}}
         <div class="codex-profile-dropdown" id="codex-profile-dropdown" style="display: none;">
-            <button class="codex-profile-trigger" id="codex-profile-trigger" aria-haspopup="listbox" aria-expanded="false">
+            <button class="codex-profile-trigger" id="codex-profile-trigger" aria-haspopup="listbox"
+                aria-expanded="false">
                 <span class="codex-profile-label" id="codex-profile-label">Profile</span>
-                <svg class="codex-profile-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                <svg class="codex-profile-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 9l6 6 6-6" />
+                </svg>
             </button>
-            <ul class="codex-profile-menu" id="codex-profile-menu" role="listbox" aria-label="Select Codex profile"></ul>
+            <ul class="codex-profile-menu" id="codex-profile-menu" role="listbox" aria-label="Select Codex profile">
+            </ul>
         </div>
         <div class="codex-profile-dropdown" id="minimax-profile-dropdown" style="display: none;">
-            <button class="codex-profile-trigger" id="minimax-profile-trigger" aria-haspopup="listbox" aria-expanded="false">
+            <button class="codex-profile-trigger" id="minimax-profile-trigger" aria-haspopup="listbox"
+                aria-expanded="false">
                 <span class="codex-profile-label" id="minimax-profile-label">Account</span>
-                <svg class="codex-profile-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                <svg class="codex-profile-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 9l6 6 6-6" />
+                </svg>
             </button>
-            <ul class="codex-profile-menu" id="minimax-profile-menu" role="listbox" aria-label="Select MiniMax account"></ul>
+            <ul class="codex-profile-menu" id="minimax-profile-menu" role="listbox" aria-label="Select MiniMax account">
+            </ul>
         </div>
         <div class="header-actions">
             <button class="header-btn" id="refresh-btn" aria-label="Refresh data" title="Refresh now">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                    <path d="M3 3v5h5" />
+                </svg>
             </button>
             <div class="header-meta">
                 <span class="last-updated" id="last-updated">Last updated: --:--:--</span>
@@ -42,19 +60,23 @@
         </div>
         <!-- Notification Center -->
         <div class="notification-center" id="notification-center">
-            <button class="notification-bell" id="notification-bell" aria-label="Notifications" aria-expanded="false" aria-haspopup="true" title="Notifications">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            <button class="notification-bell" id="notification-bell" aria-label="Notifications" aria-expanded="false"
+                aria-haspopup="true" title="Notifications">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" aria-hidden="true">
+                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                 </svg>
-                <span class="notification-badge" id="notification-badge" style="display: none;" aria-live="polite">0</span>
+                <span class="notification-badge" id="notification-badge" style="display: none;"
+                    aria-live="polite">0</span>
             </button>
             <div class="notification-dropdown" id="notification-dropdown" role="menu" aria-label="Notifications">
                 <div class="notification-header">
                     <span class="notification-title">Notifications</span>
-                    <button class="notification-dismiss-all" id="dismiss-all-alerts" title="Dismiss all" aria-label="Clear all notifications">
+                    <button class="notification-dismiss-all" id="dismiss-all-alerts" title="Dismiss all"
+                        aria-label="Clear all notifications">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M18 6L6 18M6 6l12 12"/>
+                            <path d="M18 6L6 18M6 6l12 12" />
                         </svg>
                         Clear all
                     </button>
@@ -66,23 +88,32 @@
         </div>
 
         <div class="header-controls">
-            <a href="{{.BasePath}}/settings" class="header-btn" id="settings-btn" aria-label="Settings" title="Settings">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="12" cy="12" r="3"/>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            <a href="{{.BasePath}}/settings" class="header-btn" id="settings-btn" aria-label="Settings"
+                title="Settings">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3" />
+                    <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
                 </svg>
             </a>
             <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
                 <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="5"/>
-                    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                    <circle cx="12" cy="12" r="5" />
+                    <path
+                        d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
                 </svg>
                 <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
                 </svg>
             </button>
             <a href="{{.BasePath}}/logout" class="header-btn" id="logout-btn" aria-label="Logout" title="Logout">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                </svg>
             </a>
         </div>
     </header>
@@ -120,6 +151,9 @@
         {{else if eq .CurrentProvider "cursor"}}
         <!-- Cursor quota cards (dynamically populated by JS) -->
         <div class="quota-grid" id="quota-grid-cursor" data-provider="cursor"></div>
+        {{else if eq .CurrentProvider "opencode"}}
+        <!-- OpenCode quota cards (dynamically populated by JS) -->
+        <div class="quota-grid" id="quota-grid-opencode" data-provider="opencode"></div>
         {{else if eq .CurrentProvider "api-integrations"}}
         <div class="api-integrations-dashboard" id="api-integrations-dashboard" data-provider="api-integrations">
             <div class="quota-grid" id="api-integrations-grid"></div>
@@ -128,11 +162,12 @@
         <div class="quota-grid" id="quota-grid" data-provider="{{.CurrentProvider}}">
             {{if eq .CurrentProvider "zai"}}
             <!-- Z.ai quota cards -->
-            <article class="quota-card" data-quota="tokensLimit" role="button" tabindex="0" aria-label="View Tokens Limit details">
+            <article class="quota-card" data-quota="tokensLimit" role="button" tabindex="0"
+                aria-label="View Tokens Limit details">
                 <header class="card-header">
                     <h2 class="quota-title">
                         <svg class="quota-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                         </svg>
                         Tokens Limit
                     </h2>
@@ -143,14 +178,15 @@
                     <span class="usage-fraction" id="fraction-tokensLimit">0 / 200M</span>
                 </div>
                 <div class="progress-wrapper">
-                    <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0"
+                        aria-valuemax="100">
                         <div class="progress-fill" id="progress-tokensLimit" style="width: 0%"></div>
                     </div>
                 </div>
                 <footer class="card-footer">
                     <span class="status-badge" id="status-tokensLimit" data-status="healthy">
                         <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 6L9 17l-5-5"/>
+                            <path d="M20 6L9 17l-5-5" />
                         </svg>
                         Healthy
                     </span>
@@ -158,12 +194,13 @@
                 </footer>
             </article>
 
-            <article class="quota-card" data-quota="timeLimit" role="button" tabindex="0" aria-label="View Time Limit details">
+            <article class="quota-card" data-quota="timeLimit" role="button" tabindex="0"
+                aria-label="View Time Limit details">
                 <header class="card-header">
                     <h2 class="quota-title">
                         <svg class="quota-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <polyline points="12 6 12 12 16 14"/>
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
                         </svg>
                         Time Limit
                     </h2>
@@ -174,14 +211,15 @@
                     <span class="usage-fraction" id="fraction-timeLimit">0 / 1,000</span>
                 </div>
                 <div class="progress-wrapper">
-                    <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0"
+                        aria-valuemax="100">
                         <div class="progress-fill" id="progress-timeLimit" style="width: 0%"></div>
                     </div>
                 </div>
                 <footer class="card-footer">
                     <span class="status-badge" id="status-timeLimit" data-status="healthy">
                         <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 6L9 17l-5-5"/>
+                            <path d="M20 6L9 17l-5-5" />
                         </svg>
                         Healthy
                     </span>
@@ -189,11 +227,13 @@
                 </footer>
             </article>
 
-            <article class="quota-card" data-quota="toolCalls" role="button" tabindex="0" aria-label="View Tool Calls details">
+            <article class="quota-card" data-quota="toolCalls" role="button" tabindex="0"
+                aria-label="View Tool Calls details">
                 <header class="card-header">
                     <h2 class="quota-title">
                         <svg class="quota-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+                            <path
+                                d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
                         </svg>
                         Tool Calls
                     </h2>
@@ -204,7 +244,8 @@
                     <span class="usage-fraction" id="fraction-toolCalls">0 / 0</span>
                 </div>
                 <div class="progress-wrapper">
-                    <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0"
+                        aria-valuemax="100">
                         <div class="progress-fill" id="progress-toolCalls" style="width: 0%"></div>
                     </div>
                 </div>
@@ -212,7 +253,7 @@
                 <footer class="card-footer">
                     <span class="status-badge" id="status-toolCalls" data-status="healthy">
                         <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 6L9 17l-5-5"/>
+                            <path d="M20 6L9 17l-5-5" />
                         </svg>
                         Healthy
                     </span>
@@ -221,12 +262,13 @@
             </article>
             {{else}}
             <!-- Synthetic quota cards -->
-            <article class="quota-card" data-quota="subscription" role="button" tabindex="0" aria-label="View Subscription Quota details">
+            <article class="quota-card" data-quota="subscription" role="button" tabindex="0"
+                aria-label="View Subscription Quota details">
                 <header class="card-header">
                     <h2 class="quota-title">
                         <svg class="quota-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2" />
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
                         </svg>
                         Subscription
                     </h2>
@@ -237,14 +279,15 @@
                     <span class="usage-fraction" id="fraction-subscription">0 / 0</span>
                 </div>
                 <div class="progress-wrapper">
-                    <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0"
+                        aria-valuemax="100">
                         <div class="progress-fill" id="progress-subscription" style="width: 0%"></div>
                     </div>
                 </div>
                 <footer class="card-footer">
                     <span class="status-badge" id="status-subscription" data-status="healthy">
                         <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 6L9 17l-5-5"/>
+                            <path d="M20 6L9 17l-5-5" />
                         </svg>
                         Healthy
                     </span>
@@ -252,12 +295,13 @@
                 </footer>
             </article>
 
-            <article class="quota-card" data-quota="search" role="button" tabindex="0" aria-label="View Search Hourly details">
+            <article class="quota-card" data-quota="search" role="button" tabindex="0"
+                aria-label="View Search Hourly details">
                 <header class="card-header">
                     <h2 class="quota-title">
                         <svg class="quota-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"/>
-                            <path d="m21 21-4.35-4.35"/>
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="m21 21-4.35-4.35" />
                         </svg>
                         Search (Hourly)
                     </h2>
@@ -268,14 +312,15 @@
                     <span class="usage-fraction" id="fraction-search">0 / 0</span>
                 </div>
                 <div class="progress-wrapper">
-                    <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0"
+                        aria-valuemax="100">
                         <div class="progress-fill" id="progress-search" style="width: 0%"></div>
                     </div>
                 </div>
                 <footer class="card-footer">
                     <span class="status-badge" id="status-search" data-status="healthy">
                         <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 6L9 17l-5-5"/>
+                            <path d="M20 6L9 17l-5-5" />
                         </svg>
                         Healthy
                     </span>
@@ -283,11 +328,13 @@
                 </footer>
             </article>
 
-            <article class="quota-card" data-quota="toolCalls" role="button" tabindex="0" aria-label="View Tool Call Discounts details">
+            <article class="quota-card" data-quota="toolCalls" role="button" tabindex="0"
+                aria-label="View Tool Call Discounts details">
                 <header class="card-header">
                     <h2 class="quota-title">
                         <svg class="quota-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+                            <path
+                                d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
                         </svg>
                         Tool Calls
                     </h2>
@@ -298,14 +345,15 @@
                     <span class="usage-fraction" id="fraction-toolCalls">0 / 0</span>
                 </div>
                 <div class="progress-wrapper">
-                    <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                    <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0"
+                        aria-valuemax="100">
                         <div class="progress-fill" id="progress-toolCalls" style="width: 0%"></div>
                     </div>
                 </div>
                 <footer class="card-footer">
                     <span class="status-badge" id="status-toolCalls" data-status="healthy">
                         <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 6L9 17l-5-5"/>
+                            <path d="M20 6L9 17l-5-5" />
                         </svg>
                         Healthy
                     </span>
@@ -321,9 +369,10 @@
             <section class="insights-panel" id="api-integrations-all-time-insights-panel">
                 <header class="section-header">
                     <h3 class="section-title">
-                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <path d="M12 16v-4M12 8h.01"/>
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M12 16v-4M12 8h.01" />
                         </svg>
                         All Time Statistics
                     </h3>
@@ -336,9 +385,10 @@
             <section class="insights-panel" id="api-integrations-recent-insights-panel">
                 <header class="section-header">
                     <h3 class="section-title">
-                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 12h18"/>
-                            <path d="M12 3v18"/>
+                        <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M3 12h18" />
+                            <path d="M12 3v18" />
                         </svg>
                         Recent Usage Insights
                     </h3>
@@ -353,8 +403,8 @@
             <header class="section-header">
                 <h3 class="section-title">
                     <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <path d="M12 16v-4M12 8h.01"/>
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 16v-4M12 8h.01" />
                     </svg>
                     Usage Insights
                 </h3>
@@ -371,14 +421,15 @@
             <header class="section-header">
                 <h3 class="section-title">
                     <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M3 3v18h18"/>
-                        <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
+                        <path d="M3 3v18h18" />
+                        <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3" />
                     </svg>
                     {{if eq .CurrentProvider "api-integrations"}}API Integration Usage{{else}}Usage Graphs{{end}}
                 </h3>
                 <div class="chart-controls">
                     {{if eq .CurrentProvider "api-integrations"}}
-                    <select class="page-size-select" id="api-integrations-metric-select" aria-label="API integrations chart metric">
+                    <select class="page-size-select" id="api-integrations-metric-select"
+                        aria-label="API integrations chart metric">
                         <option value="tokenPerCall">Tokens per Request</option>
                         <option value="requestCount">Requests</option>
                         <option value="accumulatedTokens">Accumulated Token Use</option>
@@ -405,7 +456,7 @@
             <header class="section-header">
                 <h3 class="section-title">
                     <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2v20M2 12h20"/>
+                        <path d="M12 2v20M2 12h20" />
                     </svg>
                     Ingest Health
                 </h3>
@@ -424,7 +475,9 @@
                         </tr>
                     </thead>
                     <tbody id="api-integrations-health-tbody">
-                        <tr><td colspan="3" class="empty-state">No API integration ingest state yet.</td></tr>
+                        <tr>
+                            <td colspan="3" class="empty-state">No API integration ingest state yet.</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -434,8 +487,8 @@
             <header class="section-header">
                 <h3 class="section-title">
                     <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
                     </svg>
                     Setup Guide
                 </h3>
@@ -445,10 +498,15 @@
                     <article class="insight-card severity-info expanded">
                         <div class="insight-card-header">
                             <span class="insight-card-title">How Custom API Integrations Work</span>
-                            <span class="insight-card-values"><span class="insight-card-metric">JSONL + Tail</span></span>
+                            <span class="insight-card-values"><span class="insight-card-metric">JSONL +
+                                    Tail</span></span>
                         </div>
-                        <div class="insight-card-detail" style="max-height:none;opacity:1;margin-top:8px;padding-top:8px;">
-                            <div class="insight-card-desc">Your script makes a normal provider API call, extracts usage from the response, and appends one normalized JSON line into <code>~/.onwatch/api-integrations/</code>.<br> onWatch tails those files and stores the telemetry in SQLite.</div>
+                        <div class="insight-card-detail"
+                            style="max-height:none;opacity:1;margin-top:8px;padding-top:8px;">
+                            <div class="insight-card-desc">Your script makes a normal provider API call, extracts usage
+                                from the response, and appends one normalized JSON line into
+                                <code>~/.onwatch/api-integrations/</code>.<br> onWatch tails those files and stores the
+                                telemetry in SQLite.</div>
                         </div>
                     </article>
                     <article class="insight-card severity-info expanded">
@@ -456,8 +514,11 @@
                             <span class="insight-card-title">Quick Start</span>
                             <span class="insight-card-values"><span class="insight-card-metric">4 Steps</span></span>
                         </div>
-                        <div class="insight-card-detail" style="max-height:none;opacity:1;margin-top:8px;padding-top:8px;">
-                            <div class="insight-card-desc">1. Add a wrapper function around your API call. <br> 2. Write events into <code>~/.onwatch/api-integrations/</code>.<br> 3. Keep onWatch running.<br> 4. Verify ingestion in the health panel and the chart above.</div>
+                        <div class="insight-card-detail"
+                            style="max-height:none;opacity:1;margin-top:8px;padding-top:8px;">
+                            <div class="insight-card-desc">1. Add a wrapper function around your API call. <br> 2. Write
+                                events into <code>~/.onwatch/api-integrations/</code>.<br> 3. Keep onWatch running.<br>
+                                4. Verify ingestion in the health panel and the chart above.</div>
                         </div>
                     </article>
                     <article class="insight-card severity-info expanded">
@@ -465,8 +526,11 @@
                             <span class="insight-card-title">Reference Paths</span>
                             <span class="insight-card-values"><span class="insight-card-metric">Docs</span></span>
                         </div>
-                        <div class="insight-card-detail" style="max-height:none;opacity:1;margin-top:8px;padding-top:8px;">
-                            <div class="insight-card-desc">Setup doc: <code>docs/API_INTEGRATIONS_SETUP.md</code>.<br> Wrapper found in: <code>examples/api_integrations/</code>.<br> Supported .py examples include:<br>Anthropic, OpenAI, Mistral, OpenRouter, and Gemini.</div>
+                        <div class="insight-card-detail"
+                            style="max-height:none;opacity:1;margin-top:8px;padding-top:8px;">
+                            <div class="insight-card-desc">Setup doc: <code>docs/API_INTEGRATIONS_SETUP.md</code>.<br>
+                                Wrapper found in: <code>examples/api_integrations/</code>.<br> Supported .py examples
+                                include:<br>Anthropic, OpenAI, Mistral, OpenRouter, and Gemini.</div>
                         </div>
                     </article>
                 </div>
@@ -479,9 +543,9 @@
             <header class="section-header">
                 <h3 class="section-title">
                     <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                        <circle cx="9" cy="7" r="4"/>
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                        <circle cx="9" cy="7" r="4" />
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
                     </svg>
                     Session History
                 </h3>
@@ -498,39 +562,64 @@
                 <table class="data-table" id="sessions-table" data-provider="{{.CurrentProvider}}">
                     <thead>
                         <tr>
-                            {{if ne .CurrentProvider "minimax"}}<th data-sort-key="id" role="button" tabindex="0">Session <span class="sort-arrow"></span></th>{{end}}
-                            <th data-sort-key="start" role="button" tabindex="0">Started <span class="sort-arrow"></span></th>
-                            <th data-sort-key="end" role="button" tabindex="0">Ended <span class="sort-arrow"></span></th>
-                            <th data-sort-key="duration" role="button" tabindex="0">Duration <span class="sort-arrow"></span></th>
+                            {{if ne .CurrentProvider "minimax"}}<th data-sort-key="id" role="button" tabindex="0">
+                                Session <span class="sort-arrow"></span></th>{{end}}
+                            <th data-sort-key="start" role="button" tabindex="0">Started <span
+                                    class="sort-arrow"></span></th>
+                            <th data-sort-key="end" role="button" tabindex="0">Ended <span class="sort-arrow"></span>
+                            </th>
+                            <th data-sort-key="duration" role="button" tabindex="0">Duration <span
+                                    class="sort-arrow"></span></th>
                             {{if eq .CurrentProvider "anthropic"}}
-                            <th data-sort-key="sub" role="button" tabindex="0" id="anth-session-col-0">5-Hour <span class="sort-arrow"></span></th>
-                            <th data-sort-key="search" role="button" tabindex="0" id="anth-session-col-1">Weekly <span class="sort-arrow"></span></th>
-                            <th data-sort-key="tool" role="button" tabindex="0" id="anth-session-col-2">Sonnet <span class="sort-arrow"></span></th>
+                            <th data-sort-key="sub" role="button" tabindex="0" id="anth-session-col-0">5-Hour <span
+                                    class="sort-arrow"></span></th>
+                            <th data-sort-key="search" role="button" tabindex="0" id="anth-session-col-1">Weekly <span
+                                    class="sort-arrow"></span></th>
+                            <th data-sort-key="tool" role="button" tabindex="0" id="anth-session-col-2">Sonnet <span
+                                    class="sort-arrow"></span></th>
                             {{else if eq .CurrentProvider "zai"}}
-                            <th data-sort-key="snapshots" role="button" tabindex="0">Snapshots <span class="sort-arrow"></span></th>
+                            <th data-sort-key="snapshots" role="button" tabindex="0">Snapshots <span
+                                    class="sort-arrow"></span></th>
                             {{else if eq .CurrentProvider "codex"}}
-                            <th data-sort-key="sub" role="button" tabindex="0" id="codex-session-col-0">5-Hour Limit <span class="sort-arrow"></span></th>
-                            <th data-sort-key="search" role="button" tabindex="0" id="codex-session-col-1">Weekly All-Model <span class="sort-arrow"></span></th>
+                            <th data-sort-key="sub" role="button" tabindex="0" id="codex-session-col-0">5-Hour Limit
+                                <span class="sort-arrow"></span></th>
+                            <th data-sort-key="search" role="button" tabindex="0" id="codex-session-col-1">Weekly
+                                All-Model <span class="sort-arrow"></span></th>
                             {{else if eq .CurrentProvider "minimax"}}
-                            <th data-sort-key="sub" role="button" tabindex="0">Peak Requests <span class="sort-arrow"></span></th>
-                            <th data-sort-key="search" role="button" tabindex="0">Requests Used <span class="sort-arrow"></span></th>
-                            <th data-sort-key="tool" role="button" tabindex="0">Snapshots <span class="sort-arrow"></span></th>
+                            <th data-sort-key="sub" role="button" tabindex="0">Peak Requests <span
+                                    class="sort-arrow"></span></th>
+                            <th data-sort-key="search" role="button" tabindex="0">Requests Used <span
+                                    class="sort-arrow"></span></th>
+                            <th data-sort-key="tool" role="button" tabindex="0">Snapshots <span
+                                    class="sort-arrow"></span></th>
                             {{else if eq .CurrentProvider "antigravity"}}
-                            <th data-sort-key="sub" role="button" tabindex="0">Claude + GPT Quota <span class="sort-arrow"></span></th>
-                            <th data-sort-key="search" role="button" tabindex="0">Gemini Pro Quota <span class="sort-arrow"></span></th>
-                            <th data-sort-key="tool" role="button" tabindex="0">Gemini Flash Quota <span class="sort-arrow"></span></th>
+                            <th data-sort-key="sub" role="button" tabindex="0">Claude + GPT Quota <span
+                                    class="sort-arrow"></span></th>
+                            <th data-sort-key="search" role="button" tabindex="0">Gemini Pro Quota <span
+                                    class="sort-arrow"></span></th>
+                            <th data-sort-key="tool" role="button" tabindex="0">Gemini Flash Quota <span
+                                    class="sort-arrow"></span></th>
                             {{else if eq .CurrentProvider "gemini"}}
-                            <th data-sort-key="sub" role="button" tabindex="0">Peak Usage <span class="sort-arrow"></span></th>
-                            <th data-sort-key="search" role="button" tabindex="0">Session Δ <span class="sort-arrow"></span></th>
-                            <th data-sort-key="tool" role="button" tabindex="0">Snapshots <span class="sort-arrow"></span></th>
+                            <th data-sort-key="sub" role="button" tabindex="0">Peak Usage <span
+                                    class="sort-arrow"></span></th>
+                            <th data-sort-key="search" role="button" tabindex="0">Session Δ <span
+                                    class="sort-arrow"></span></th>
+                            <th data-sort-key="tool" role="button" tabindex="0">Snapshots <span
+                                    class="sort-arrow"></span></th>
                             {{else if eq .CurrentProvider "openrouter"}}
-                            <th data-sort-key="sub" role="button" tabindex="0">Credits Used <span class="sort-arrow"></span></th>
-                            <th data-sort-key="search" role="button" tabindex="0">Session Δ <span class="sort-arrow"></span></th>
-                            <th data-sort-key="tool" role="button" tabindex="0">Snapshots <span class="sort-arrow"></span></th>
+                            <th data-sort-key="sub" role="button" tabindex="0">Credits Used <span
+                                    class="sort-arrow"></span></th>
+                            <th data-sort-key="search" role="button" tabindex="0">Session Δ <span
+                                    class="sort-arrow"></span></th>
+                            <th data-sort-key="tool" role="button" tabindex="0">Snapshots <span
+                                    class="sort-arrow"></span></th>
                             {{else}}
-                            <th data-sort-key="sub" role="button" tabindex="0">Sub Usage <span class="sort-arrow"></span></th>
-                            <th data-sort-key="search" role="button" tabindex="0">Search Usage <span class="sort-arrow"></span></th>
-                            <th data-sort-key="tool" role="button" tabindex="0">Tool Usage <span class="sort-arrow"></span></th>
+                            <th data-sort-key="sub" role="button" tabindex="0">Sub Usage <span
+                                    class="sort-arrow"></span></th>
+                            <th data-sort-key="search" role="button" tabindex="0">Search Usage <span
+                                    class="sort-arrow"></span></th>
+                            <th data-sort-key="tool" role="button" tabindex="0">Tool Usage <span
+                                    class="sort-arrow"></span></th>
                             {{end}}
                         </tr>
                     </thead>
@@ -567,8 +656,8 @@
             <header class="section-header">
                 <h3 class="section-title">
                     <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-                        <path d="M3 3v5h5"/>
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                        <path d="M3 3v5h5" />
                     </svg>
                     {{if eq .CurrentProvider "cursor"}}Usage Samples{{else}}Logging History{{end}}
                 </h3>
@@ -585,7 +674,8 @@
                     </div>
                     <div class="filter-group">
                         <span class="filter-label">{{if eq .CurrentProvider "cursor"}}Bucket{{else}}Group{{end}}</span>
-                        <div class="filter-pills" id="cycles-bucket-pills" role="group" aria-label="Polling grouping window">
+                        <div class="filter-pills" id="cycles-bucket-pills" role="group"
+                            aria-label="Polling grouping window">
                             <!-- Populated dynamically from poll interval -->
                         </div>
                     </div>
@@ -601,23 +691,30 @@
                 <table class="data-table" id="cycles-table">
                     <thead id="cycles-thead">
                         <tr>
-                            <th data-sort-key="id" role="button" tabindex="0">Cycle <span class="sort-arrow"></span></th>
-                            <th data-sort-key="start" role="button" tabindex="0">Start <span class="sort-arrow"></span></th>
+                            <th data-sort-key="id" role="button" tabindex="0">Cycle <span class="sort-arrow"></span>
+                            </th>
+                            <th data-sort-key="start" role="button" tabindex="0">Start <span class="sort-arrow"></span>
+                            </th>
                             <th data-sort-key="end" role="button" tabindex="0">End <span class="sort-arrow"></span></th>
-                            <th data-sort-key="duration" role="button" tabindex="0">Duration <span class="sort-arrow"></span></th>
-                            <th data-sort-key="totalDelta" role="button" tabindex="0">Total Δ <span class="sort-arrow"></span></th>
+                            <th data-sort-key="duration" role="button" tabindex="0">Duration <span
+                                    class="sort-arrow"></span></th>
+                            <th data-sort-key="totalDelta" role="button" tabindex="0">Total Δ <span
+                                    class="sort-arrow"></span></th>
                         </tr>
                     </thead>
                     <tbody id="cycles-tbody">
                         <tr>
-                            <td colspan="5" class="empty-state">{{if eq .CurrentProvider "cursor"}}No usage samples yet. Cursor tracking begins after the first successful sync.{{else}}No polling data yet. Tracking begins on first poll.{{end}}</td>
+                            <td colspan="5" class="empty-state">{{if eq .CurrentProvider "cursor"}}No usage samples yet.
+                                Cursor tracking begins after the first successful sync.{{else}}No polling data yet.
+                                Tracking begins on first poll.{{end}}</td>
                         </tr>
                     </tbody>
                 </table>
             </div>
             <div class="table-footer">
                 <span class="table-info" id="cycles-info">Showing 0-0 of 0</span>
-                <span class="table-legend">{{if eq .CurrentProvider "cursor"}}Δ = change since previous sample{{else}}⚡ = consumption rate per hour{{end}}</span>
+                <span class="table-legend">{{if eq .CurrentProvider "cursor"}}Δ = change since previous sample{{else}}⚡
+                    = consumption rate per hour{{end}}</span>
                 <div class="table-pagination" id="cycles-pagination"></div>
             </div>
         </section>
@@ -626,14 +723,15 @@
             <header class="section-header">
                 <h3 class="section-title">
                     <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 20V10M18 20V4M6 20v-4"/>
+                        <path d="M12 20V10M18 20V4M6 20v-4" />
                     </svg>
                     {{if eq .CurrentProvider "cursor"}}Billing Cycle Overview{{else}}Cycle Overview{{end}}
                 </h3>
                 <div class="cycles-filters-inline">
                     <div class="filter-group">
                         <span class="filter-label">{{if eq .CurrentProvider "cursor"}}Quota{{else}}Period{{end}}</span>
-                        <div class="filter-pills" id="overview-period-pills" role="group" aria-label="Renewal period"></div>
+                        <div class="filter-pills" id="overview-period-pills" role="group" aria-label="Renewal period">
+                        </div>
                     </div>
                     <select class="page-size-select" id="overview-page-size" aria-label="Rows per page">
                         <option value="10">10</option>
@@ -645,15 +743,23 @@
             </header>
             <div class="table-wrapper">
                 <table class="data-table" id="overview-table">
-                    <thead id="overview-thead"><tr><th>Loading...</th></tr></thead>
+                    <thead id="overview-thead">
+                        <tr>
+                            <th>Loading...</th>
+                        </tr>
+                    </thead>
                     <tbody id="overview-tbody">
-                        <tr><td class="empty-state">{{if eq .CurrentProvider "cursor"}}Select a quota to compare monthly billing cycles.{{else}}Select a renewal period to view cross-quota data.{{end}}</td></tr>
+                        <tr>
+                            <td class="empty-state">{{if eq .CurrentProvider "cursor"}}Select a quota to compare monthly
+                                billing cycles.{{else}}Select a renewal period to view cross-quota data.{{end}}</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
             <div class="table-footer">
                 <span class="table-info" id="overview-info">Showing 0-0 of 0</span>
-                <span class="table-legend">{{if eq .CurrentProvider "cursor"}}Monthly cycle comparison by quota{{else}}⚡ = consumption rate per hour{{end}}</span>
+                <span class="table-legend">{{if eq .CurrentProvider "cursor"}}Monthly cycle comparison by quota{{else}}⚡
+                    = consumption rate per hour{{end}}</span>
                 <div class="table-pagination" id="overview-pagination"></div>
             </div>
         </section>
@@ -662,19 +768,23 @@
 
     <footer class="app-footer">
         <div class="footer-content">
-            <span class="footer-brand"><a href="https://onwatch.onllm.dev" class="footer-link" target="_blank" rel="noopener">onWatch v{{.Version}}</a></span>
+            <span class="footer-brand"><a href="https://onwatch.onllm.dev" class="footer-link" target="_blank"
+                    rel="noopener">onWatch v{{.Version}}</a></span>
             <span id="update-badge" class="footer-update" hidden>
                 <button id="update-btn" class="footer-update-btn" title="Click to update">
                     Update to v<span id="update-version"></span>
                 </button>
             </span>
-            <span class="footer-heart">Built with &#10084;&#65039; by <a href="https://onllm.dev" class="footer-link" target="_blank" rel="noopener">onllm.dev</a></span>
+            <span class="footer-heart">Built with &#10084;&#65039; by <a href="https://onllm.dev" class="footer-link"
+                    target="_blank" rel="noopener">onllm.dev</a></span>
             <div class="footer-links">
                 <a href="https://onllm.dev" class="footer-link" target="_blank" rel="noopener">onllm.dev</a>
                 <span class="footer-sep">&#183;</span>
-                <a href="https://github.com/onllm-dev/onwatch" class="footer-link" target="_blank" rel="noopener">GitHub</a>
+                <a href="https://github.com/onllm-dev/onwatch" class="footer-link" target="_blank"
+                    rel="noopener">GitHub</a>
                 <span class="footer-sep">&#183;</span>
-                <a href="https://buymeacoffee.com/prakersh" class="footer-link footer-support" target="_blank" rel="noopener" title="Support onWatch">Support onWatch</a>
+                <a href="https://buymeacoffee.com/prakersh" class="footer-link footer-support" target="_blank"
+                    rel="noopener" title="Support onWatch">Support onWatch</a>
             </div>
         </div>
     </footer>
@@ -688,7 +798,7 @@
             <h2 class="modal-title" id="modal-title">Quota Details</h2>
             <button class="modal-close" id="modal-close" aria-label="Close modal">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M18 6L6 18M6 6l12 12"/>
+                    <path d="M18 6L6 18M6 6l12 12" />
                 </svg>
             </button>
         </header>

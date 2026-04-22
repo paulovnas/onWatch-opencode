@@ -838,11 +838,13 @@ function codexVisibleQuotaNames(planType) {
 const anthropicQuotaOrder = ['five_hour', 'seven_day', 'seven_day_sonnet', 'monthly_limit', 'extra_usage'];
 const codexQuotaOrder = ['five_hour', 'seven_day', 'code_review'];
 const cursorQuotaOrder = ['total_usage', 'auto_usage', 'api_usage', 'credits', 'on_demand'];
+const opencodeQuotaOrder = ['rolling_usage', 'weekly_usage', 'monthly_usage'];
 
 function quotaOrderForProvider(provider) {
   if (provider === 'anthropic') return anthropicQuotaOrder;
   if (provider === 'codex') return codexQuotaOrder;
   if (provider === 'cursor') return cursorQuotaOrder;
+  if (provider === 'opencode') return opencodeQuotaOrder;
   return [];
 }
 
@@ -973,6 +975,12 @@ const cursorDisplayNames = {
   'on_demand': 'On-Demand',
 };
 
+const opencodeDisplayNames = {
+  'rolling_usage': 'Rolling Usage',
+  'weekly_usage': 'Weekly Usage',
+  'monthly_usage': 'Monthly Usage',
+};
+
 const geminiChartColorMap = {
   'pro': { border: '#4285F4', bg: 'rgba(66, 133, 244, 0.08)' },
   'flash': { border: '#34A853', bg: 'rgba(52, 168, 83, 0.08)' },
@@ -986,6 +994,54 @@ const cursorChartColorMap = {
   'credits': { border: '#10b981', bg: 'rgba(16, 185, 129, 0.08)' },
   'on_demand': { border: '#f59e0b', bg: 'rgba(245, 158, 11, 0.08)' },
 };
+
+const opencodeChartColorMap = {
+  'rolling_usage': { border: '#3b82f6', bg: 'rgba(59, 130, 246, 0.08)' },
+  'weekly_usage': { border: '#10b981', bg: 'rgba(16, 185, 129, 0.08)' },
+  'monthly_usage': { border: '#f59e0b', bg: 'rgba(245, 158, 11, 0.08)' },
+};
+
+function normalizeOpenCodeUsageValue(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  if (numeric < 0) return 0;
+  if (numeric > 1) return Math.min(1, numeric / 100);
+  return numeric;
+}
+
+function normalizeOpenCodeUsagePercent(value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  if (numeric < 0) return 0;
+  if (numeric < 1) return Math.min(100, numeric * 100);
+  if (numeric > 100) return 100;
+  return numeric;
+}
+
+function getOpenCodeStatus(percent) {
+  if (percent >= 90) return 'critical';
+  if (percent >= 75) return 'warning';
+  return 'healthy';
+}
+
+function getOpenCodeUsageMetrics(quota) {
+  let percent;
+  if (quota?.usagePercent != null) {
+    percent = normalizeOpenCodeUsagePercent(quota.usagePercent);
+  } else {
+    percent = normalizeOpenCodeUsageValue(quota?.utilization) * 100;
+  }
+  const ratio = percent / 100;
+  let remainingPercent = Number(quota?.remainingPercent);
+  if (!Number.isFinite(remainingPercent)) {
+    remainingPercent = 100 - percent;
+  } else if (remainingPercent <= 1 && remainingPercent >= 0) {
+    remainingPercent *= 100;
+  }
+  remainingPercent = Math.max(0, Math.min(100, remainingPercent));
+
+  return { ratio, percent, remainingPercent };
+}
 const cursorChartColorFallback = [
   { border: '#6366f1', bg: 'rgba(99, 102, 241, 0.08)' },
   { border: '#8b5cf6', bg: 'rgba(139, 92, 246, 0.08)' },
@@ -1050,6 +1106,11 @@ const renewalCategories = {
     { label: 'API Usage', groupBy: 'api_usage' },
     { label: 'Credits', groupBy: 'credits' },
     { label: 'On-Demand', groupBy: 'on_demand' }
+  ],
+  opencode: [
+    { label: 'Rolling Usage', groupBy: 'rolling_usage' },
+    { label: 'Weekly Usage', groupBy: 'weekly_usage' },
+    { label: 'Monthly Usage', groupBy: 'monthly_usage' }
   ]
 };
 
@@ -1072,6 +1133,9 @@ const overviewQuotaDisplayNames = {
   antigravity_gemini_pro: 'Gemini Pro Quota',
   antigravity_gemini_flash: 'Gemini Flash Quota',
   credits: 'Credits',
+  rolling_usage: 'Rolling Usage',
+  weekly_usage: 'Weekly Usage',
+  monthly_usage: 'Monthly Usage',
   total_usage: 'Total Usage',
   auto_usage: 'Auto + Composer',
   api_usage: 'API Usage',
@@ -1090,6 +1154,11 @@ const providerQuotaDisplayOverrides = {
     'pro': 'Gemini Pro',
     'flash': 'Gemini Flash',
     'flash_lite': 'Gemini Flash Lite',
+  },
+  opencode: {
+    'rolling_usage': 'Rolling Usage',
+    'weekly_usage': 'Weekly Usage',
+    'monthly_usage': 'Monthly Usage',
   }
 };
 
@@ -2095,6 +2164,60 @@ function renderGeminiQuotaCards(quotas, containerId) {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(); }
     });
   });
+}
+
+// ── OpenCode Quota Cards ──
+
+function renderOpenCodeQuotaCards(quotas, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  if (!quotas || quotas.length === 0) {
+    container.innerHTML = '<p class="empty-state">No OpenCode GO quota data available.</p>';
+    return;
+  }
+
+  container.innerHTML = quotas.map((q, i) => {
+    const displayName = opencodeDisplayNames[q.quotaName] || q.quotaName;
+    const usage = getOpenCodeUsageMetrics(q);
+    const usagePct = usage.percent.toFixed(1);
+    const status = getOpenCodeStatus(usage.percent);
+    const statusCfg = statusConfig[status] || statusConfig.healthy;
+    const countdownId = `countdown-opencode-${q.quotaName}`;
+    const progressId = `progress-opencode-${q.quotaName}`;
+    const percentId = `percent-opencode-${q.quotaName}`;
+    const fractionId = `fraction-opencode-${q.quotaName}`;
+    const statusId = `status-opencode-${q.quotaName}`;
+    const resetId = `reset-opencode-${q.quotaName}`;
+
+    const fractionText = `${usage.remainingPercent.toFixed(1)}% remaining`;
+
+    return `<article class="quota-card opencode-card" data-quota="${q.quotaName}" data-provider="opencode" role="button" tabindex="0" aria-label="View ${displayName} details" style="animation-delay: ${i * 60}ms">
+      <header class="card-header">
+        <h2 class="quota-title">
+          <svg class="quota-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          ${displayName}
+        </h2>
+        <span class="countdown" id="${countdownId}">${q.timeUntilResetSeconds > 0 ? formatDuration(q.timeUntilResetSeconds) : '--:--'}</span>
+      </header>
+      <div class="progress-stats">
+        <span class="usage-percent" id="${percentId}">${usagePct}%</span>
+        <span class="usage-fraction" id="${fractionId}">${fractionText}</span>
+      </div>
+      <div class="progress-wrapper">
+        <div class="progress-bar" role="progressbar" aria-valuenow="${Math.round(usage.percent)}" aria-valuemin="0" aria-valuemax="100">
+          <div class="progress-fill" id="${progressId}" style="width: ${usagePct}%" data-status="${status}"></div>
+        </div>
+      </div>
+      <footer class="card-footer">
+        <span class="status-badge" id="${statusId}" data-status="${status}">
+          <svg class="status-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="${statusCfg.icon}"/></svg>
+          ${statusCfg.label}
+        </span>
+        <span class="reset-time" id="${resetId}">${q.resetTime ? 'Resets: ' + formatDateTime(q.resetTime) : ''}</span>
+      </footer>
+    </article>`;
+  }).join('');
 }
 
 function renderCursorQuotaCards(quotas, containerId) {
@@ -3379,7 +3502,11 @@ async function fetchCurrent() {
         if (data.quotas) {
           renderCursorQuotaCards(data.quotas || [], 'quota-grid-cursor');
         }
-      } else if (provider === 'openrouter') {
+      } else if (provider === 'opencode') {
+        if (data.quotas) {
+          renderOpenCodeQuotaCards(data.quotas, 'quota-grid-opencode');
+        }
+      }else if (provider === 'openrouter') {
         if (data.credits) {
           const container = document.getElementById('quota-grid-openrouter');
           if (container && container.children.length === 0) {
@@ -4086,6 +4213,8 @@ function initChart() {
     defaultDatasets = []; // Cursor datasets are dynamic - populated when history data arrives
   } else if (provider === 'openrouter') {
     defaultDatasets = []; // OpenRouter datasets are dynamic - populated when history data arrives
+  } else if (provider === 'opencode') {
+    defaultDatasets = []; // OpenCode datasets are dynamic - populated when history data arrives
   } else if (provider === 'zai') {
     defaultDatasets = [
       { label: 'Tokens Limit', data: [], borderColor: getComputedStyle(document.documentElement).getPropertyValue('--chart-subscription').trim() || '#0D9488', backgroundColor: 'rgba(13, 148, 136, 0.06)', fill: true, tension: 0.4, borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, hidden: State.hiddenQuotas.has('tokensLimit') },
@@ -4526,6 +4655,42 @@ async function fetchHistory(range) {
       return;
     }
 
+    if (provider === 'opencode') {
+      const quotaKeys = new Set();
+      historyRows.forEach(d => {
+        Object.keys(d).forEach(k => { if (k !== 'capturedAt') quotaKeys.add(k); });
+      });
+      const sortedKeys = sortQuotaKeysForProvider(quotaKeys, 'opencode');
+      let fallbackIdx = 0;
+      const datasets = [];
+      sortedKeys.forEach((key) => {
+        const color = opencodeChartColorMap[key] || cursorChartColorFallback[fallbackIdx++ % cursorChartColorFallback.length];
+        const rawData = historyRows.map(d => ({ x: new Date(d.capturedAt), y: d[key] || 0 }));
+        const { data, gapSegments, pointRadii } = processDataWithGaps(rawData, range);
+        const mainDataset = {
+          label: opencodeDisplayNames[key] || key,
+          data: data,
+          borderColor: color.border,
+          backgroundColor: color.bg,
+          fill: true,
+          tension: 0.4,
+          borderWidth: 2,
+          pointRadius: pointRadii,
+          pointHoverRadius: 4,
+          hidden: State.hiddenQuotas.has(key),
+          spanGaps: true,
+          segment: getSegmentStyle(gapSegments, color.border)
+        };
+        datasets.push(mainDataset);
+      });
+      State.chart.data.datasets = datasets;
+      updateTimeScale(State.chart, range);
+      State.chartYMax = computeYMax(State.chart.data.datasets, State.chart);
+      State.chart.options.scales.y.max = State.chartYMax;
+      State.chart.update();
+      return;
+    }
+
     if (provider === 'openrouter') {
       const quotaKeys = new Set();
       historyRows.forEach(d => {
@@ -4656,6 +4821,7 @@ const bothProviderNames = {
   minimax: 'MiniMax',
   gemini: 'Gemini',
   cursor: 'Cursor',
+  opencode: 'OpenCode GO',
   'api-integrations': 'API Integrations',
 };
 
@@ -4769,6 +4935,26 @@ function normalizeBothQuotas(provider, payload) {
         };
       })
       .filter(Boolean);
+  }
+
+  if (provider === 'opencode') {
+    if (!Array.isArray(payload.quotas)) return [];
+    return payload.quotas.map((quota) => {
+      const displayName = opencodeDisplayNames[quota.quotaName] || quota.quotaName || 'QUOTA';
+      const usage = getOpenCodeUsageMetrics(quota);
+      return {
+        name: quota.quotaName,
+        displayName: displayName,
+        cardPercent: usage.percent,
+        cardLabel: 'Utilization',
+        status: getOpenCodeStatus(usage.percent),
+        timeUntilResetSeconds: quota.timeUntilResetSeconds || 0,
+        resetsAt: quota.resetTime || quota.resetsAt || '',
+        utilization: usage.ratio,
+        usagePercent: usage.percent,
+        remainingPercent: usage.remainingPercent,
+      };
+    });
   }
 
   if (!Array.isArray(payload.quotas)) return [];
@@ -5496,6 +5682,14 @@ function buildProviderCardDatasets(provider, rows, range) {
   if (provider === 'gemini') {
     return buildDynamicDatasetsForRows(rows, range, geminiDisplayNames, geminiChartColorMap, geminiChartColorFallback, 'gemini');
   }
+  if (provider === 'opencode') {
+    const fallback = [
+      { border: '#3b82f6', bg: 'rgba(59, 130, 246, 0.08)' },
+      { border: '#10b981', bg: 'rgba(16, 185, 129, 0.08)' },
+      { border: '#f59e0b', bg: 'rgba(245, 158, 11, 0.08)' },
+    ];
+    return buildDynamicDatasetsForRows(rows, range, opencodeDisplayNames, opencodeChartColorMap, fallback, 'opencode');
+  }
   if (provider === 'cursor') {
     const normalizedRows = rows.map((row) => {
       if (!Array.isArray(row.quotas)) return row;
@@ -5672,6 +5866,9 @@ function updateBothCharts(data, range = '6h') {
   if (activeProviders.has('cursor') && Array.isArray(data.cursor) && data.cursor.length > 0) {
     slots.push({ id: 'cursor', label: 'Cursor', provider: 'cursor', rows: data.cursor });
   }
+  if (activeProviders.has('opencode') && Array.isArray(data.opencode) && data.opencode.length > 0) {
+    slots.push({ id: 'opencode', label: 'OpenCode GO', provider: 'opencode', rows: data.opencode });
+  }
   if (activeProviders.has('codex')) {
     if (Array.isArray(data.codexAccounts) && data.codexAccounts.length > 0) {
       data.codexAccounts.forEach((account, idx) => {
@@ -5787,6 +5984,13 @@ function updateBothCharts(data, range = '6h') {
       datasets = createDynamicDatasets(slot.rows, minimaxDisplayNames, minimaxChartColorMap, minimaxChartColorFallback, 'minimax');
     } else if (slot.provider === 'gemini') {
       datasets = createDynamicDatasets(slot.rows, geminiDisplayNames, geminiChartColorMap, geminiChartColorFallback, 'gemini');
+    } else if (slot.provider === 'opencode') {
+      const opencodeFallback = [
+        { border: '#3b82f6', bg: 'rgba(59, 130, 246, 0.08)' },
+        { border: '#10b981', bg: 'rgba(16, 185, 129, 0.08)' },
+        { border: '#f59e0b', bg: 'rgba(245, 158, 11, 0.08)' },
+      ];
+      datasets = createDynamicDatasets(slot.rows, opencodeDisplayNames, opencodeChartColorMap, opencodeFallback, 'opencode');
     } else if (slot.provider === 'cursor') {
       const normalizedRows = slot.rows.map((row) => {
         if (!Array.isArray(row.quotas)) return row;
@@ -8846,6 +9050,13 @@ const providerSettingsConfig = {
     desc: 'Gemini is auto-detected from your local credentials. Use the telemetry toggle to enable or disable tracking.',
     fields: [],
   },
+  opencode: {
+    title: 'OpenCode GO',
+    desc: 'Open OpenCode GO (opencode.ai) while logged in, then copy the auth cookie value from DevTools > Application > Cookies > https://opencode.ai. Paste it below to save it in onWatch settings.',
+    fields: [
+      { id: 'cookie', label: 'auth Cookie Value', type: 'password', placeholder: 'Paste auth cookie value', hint: 'Path: DevTools > Application > Cookies > https://opencode.ai - copy the value from auth.', sensitive: true },
+    ],
+  },
 };
 
 async function openProviderSettingsModal(providerKey) {
@@ -8866,9 +9077,18 @@ async function openProviderSettingsModal(providerKey) {
   // Build fields HTML (shared for non-Codex providers)
   let buildFieldsHTML = () => {
     if (config.fields.length === 0) {
-      return `<p style="color:var(--text-secondary);font-size:14px;margin:0">${config.desc}</p>`;
+      let html = `<p style="color:var(--text-secondary);font-size:14px;margin:0">${config.desc}</p>`;
+      if (config.showTestButton) {
+        html += `<button id="test-provider-btn" class="btn" style="margin-top:16px;padding:8px 16px;font-size:13px;background:var(--accent);color:white;border:none;border-radius:4px;cursor:pointer;">Test Connection</button>`;
+        html += `<div id="test-provider-result" style="margin-top:12px;padding:10px;background:var(--bg-secondary);border-radius:4px;font-size:12px;color:var(--text-secondary);display:none;"></div>`;
+      }
+      return html;
     }
     let html = `<p style="color:var(--text-secondary);font-size:13px;margin:0 0 20px">${config.desc}</p>`;
+    if (config.showTestButton) {
+      html += `<button id="test-provider-btn" class="btn" style="margin-top:16px;padding:8px 16px;font-size:13px;background:var(--accent);color:white;border:none;border-radius:4px;cursor:pointer;">Test Connection</button>`;
+      html += `<div id="test-provider-result" style="margin-top:12px;padding:10px;background:var(--bg-secondary);border-radius:4px;font-size:12px;color:var(--text-secondary);display:none;"></div>`;
+    }
     html += '<div class="settings-fields">';
     config.fields.forEach(f => {
       html += '<div class="settings-field">';
@@ -9120,6 +9340,39 @@ async function openProviderSettingsModal(providerKey) {
     bodyEl.innerHTML = buildFieldsHTML();
   }
 
+  // Attach test button handler if present
+  const testBtn = document.getElementById('test-provider-btn');
+  if (testBtn && config.showTestButton) {
+    testBtn.addEventListener('click', async () => {
+      const resultDiv = document.getElementById('test-provider-result');
+      if (!resultDiv) return;
+      
+      testBtn.disabled = true;
+      testBtn.textContent = 'Testing...';
+      resultDiv.style.display = 'block';
+      resultDiv.textContent = 'Testing connection...';
+      
+      try {
+        const res = await authFetch(`${API_BASE}/api/test-provider?provider=${providerKey}`);
+        const data = await res.json();
+        
+        if (res.ok) {
+          resultDiv.style.color = 'var(--md-success,#2e7d32)';
+          resultDiv.textContent = data.message || 'Connection test successful';
+        } else {
+          resultDiv.style.color = 'var(--md-error,#b3261e)';
+          resultDiv.textContent = data.error || 'Connection test failed';
+        }
+      } catch (err) {
+        resultDiv.style.color = 'var(--md-error,#b3261e)';
+        resultDiv.textContent = 'Test failed: ' + err.message;
+      } finally {
+        testBtn.disabled = false;
+        testBtn.textContent = 'Test Connection';
+      }
+    });
+  }
+
   // Store which provider is being edited
   modal.dataset.providerKey = providerKey;
   modal.hidden = false;
@@ -9150,7 +9403,8 @@ async function saveProviderSettings() {
 
     if (f.type === 'password' && f.sensitive) {
       // Only include if user typed a new value
-      if (el.value) provData[f.id] = el.value;
+      const value = el.value.trim();
+      if (value) provData[f.id] = value;
     } else if (f.type === 'number') {
       provData[f.id] = parseInt(el.value, 10) || f.default || 0;
     } else {

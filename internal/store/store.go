@@ -699,6 +699,42 @@ func (s *Store) createTables() error {
 			partial_line TEXT NOT NULL DEFAULT '',
 			updated_at TEXT NOT NULL
 		);
+
+		-- OpenCode tables
+		CREATE TABLE IF NOT EXISTS opencode_snapshots (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			captured_at TEXT NOT NULL,
+			workspace_id TEXT NOT NULL,
+			has_monthly_usage INTEGER NOT NULL DEFAULT 0,
+			raw_json TEXT NOT NULL DEFAULT '',
+			quota_count INTEGER NOT NULL DEFAULT 0
+		);
+
+		CREATE TABLE IF NOT EXISTS opencode_quota_values (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			snapshot_id INTEGER NOT NULL,
+			quota_name TEXT NOT NULL,
+			utilization REAL NOT NULL DEFAULT 0,
+			resets_at TEXT,
+			reset_in_sec INTEGER NOT NULL DEFAULT 0,
+			FOREIGN KEY (snapshot_id) REFERENCES opencode_snapshots(id)
+		);
+
+		CREATE TABLE IF NOT EXISTS opencode_reset_cycles (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			quota_name TEXT NOT NULL,
+			cycle_start TEXT NOT NULL,
+			cycle_end TEXT,
+			resets_at TEXT,
+			peak_utilization REAL NOT NULL DEFAULT 0,
+			total_delta REAL NOT NULL DEFAULT 0
+		);
+
+		-- OpenCode indexes
+		CREATE INDEX IF NOT EXISTS idx_opencode_snapshots_captured ON opencode_snapshots(captured_at);
+		CREATE INDEX IF NOT EXISTS idx_opencode_quota_values_snapshot ON opencode_quota_values(snapshot_id);
+		CREATE INDEX IF NOT EXISTS idx_opencode_cycles_name_start ON opencode_reset_cycles(quota_name, cycle_start);
+		CREATE INDEX IF NOT EXISTS idx_opencode_cycles_name_active ON opencode_reset_cycles(quota_name, cycle_end) WHERE cycle_end IS NULL;
 	`
 
 	if _, err := s.db.Exec(schema); err != nil {
